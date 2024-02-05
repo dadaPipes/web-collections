@@ -2,32 +2,51 @@
 
 const getMetaDataBtn = document.getElementById("get-OG-data");
 getMetaDataBtn.addEventListener('click', () => {
-  chrome.runtime.sendMessage({
-    type: 'request-meta-data'
-  }, (response) => {
-    const metaData = response.data;
-    console.log('meta data: ', metaData);
-    displayMetaData(metaData);
-  });
+  sendMessageAndGetResponse();
 });
 
-function displayMetaData(metaData) {
-  
-  const card = document.querySelector(".card")
+async function sendMessageAndGetResponse() {
+  try {
+    const response = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({type: 'fetchMetaDataFromPage'}, response => {
+        console.log('early response from background: ', response);
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          console.log('resolve response: ', response);
+          resolve(response);
+        }
+      });
+    });
+    displayMetaData(response);
+  } catch (error) {
+    console.error("Error fetching meta data: ", error.message);
+  }
+  return true;
+}
 
-  const title = document.createElement('h1');
-  title.classList.add('card__title');
-  title.textContent = metaData.title;
+function displayMetaData(metaDataWrapper) {
+  console.log('argument: ', metaDataWrapper)
+ const metaData = metaDataWrapper.metaData; // Access the nested metaData object
+ console.log('Display meta data:', metaData);
 
-  const img = document.createElement('img');
-  img.classList.add('card__img');
-  img.src = metaData.image;
+ const title = document.createElement('h1');
+ title.classList.add('card__title');
+ title.textContent = metaData.title;
+ console.log('title: ', title.textContent);
 
-  const description = document.createElement('p');
-  description.classList.add('card__description');
-  description.textContent = metaData.description;
+ const img = document.createElement('img');
+ img.classList.add('card__img');
+ img.src = metaData.image;
+ console.log('img: ', img.src);
 
-  card.appendChild(title);
-  card.appendChild(img);
-  card.appendChild(description);
+ const description = document.createElement('p');
+ description.classList.add('card__description');
+ description.textContent = metaData.description;
+ console.log('description: ', description.textContent);
+
+ const card = document.querySelector(".card");
+ card.appendChild(title);
+ card.appendChild(img);
+ card.appendChild(description);
 };

@@ -3,50 +3,61 @@
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'request-meta-data') {
-    handleMetaDataRequest(sendResponse);
-    return true;
-  }
+ if (message.type === 'fetchMetaDataFromPage') {
+    getCurrentTab()
+      .then((currentTab) => {
+        return requestMetaData(currentTab);
+      })
+      .then((metaData) => {
+        console.log('metaData: ', metaData);
+        sendResponse({ metaData });
+      })
+      .catch((error) => {
+        console.error('Error handling meta data request: ', error);
+        sendResponse({ error: error.message });
+      });
+    return true; // keep to send it async
+ }
 });
 
-async function handleMetaDataRequest(sendResponse) {
-  const activeTab = await queryActiveTab();
-  if (activeTab) {
-    await injectScript(activeTab.id);
-    requestMetaData(activeTab.id, sendResponse);
-  } else {
-    console.error('No active tab found');
-    sendResponse({error: 'Failed to find active tab'});
-  }
-};
-
-function requestMetaData(tabId, sendResponse) {
-  chrome.tabs.sendMessage(tabId, {type: 'fetch-meta-data'}, (response) => {
-    sendResponse({data: response.data});
-  });
+async function getCurrentTab() {
+  return new Promise((resolve, reject) => {
+    let queryOptions = { active: true, lastFocusedWindow: true };
+    chrome.tabs.query(queryOptions, tabs => {
+      if (chrome.runtime.lastError) {
+        reject(new Error('Error getting current tab: ' + chrome.runtime.lastError.message));
+      } else if (tabs.length === 0) {
+        reject(new Error('No active tab found'));
+      } else {
+        let [tab] = tabs;
+        resolve(tab);
+      }
+    });
+  }).catch(error => { console.error('An error occurred: ', error); });
 }
 
-function queryActiveTab() {
+async function requestMetaData(tab) {
   return new Promise((resolve, reject) => {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      if (tabs.length === 0) {
-        reject("No active tab found.");
+    chrome.tabs.sendMessage(tab.id, {type: 'requestMetaData'}, response => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
       } else {
-        resolve(tabs[0]);
+        resolve(response);
       }
     });
   });
 }
 
 
-async function injectScript(tabId) {
+/*
+// TODO: local storage expects a json to store the data
+async function saveMetaData(metaData) {
   try {
-    await chrome.scripting.executeScript({
-      target: {tabId: tabId},
-      files: ['scripts/content.js']
+    await chrome.storage.local.set({ key: metaData }).then(() => {
+      // something
     });
-    console.log('Script injected successfully!');
   } catch (error) {
-    console.error('Script injection failed:', error);
+    console.error('Saving meta data failed: ', error);
   }
-}
+};
+*/
