@@ -3,7 +3,7 @@
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
- if (message.type === 'fetchMetaDataFromPage') {
+ if (message.request === 'getMetaData') {
     getCurrentTab()
       .then((currentTab) => {
         return requestMetaData(currentTab);
@@ -38,7 +38,7 @@ async function getCurrentTab() {
 
 async function requestMetaData(tab) {
   return new Promise((resolve, reject) => {
-    chrome.tabs.sendMessage(tab.id, {type: 'requestMetaData'}, response => {
+    chrome.tabs.sendMessage(tab.id, {request: 'fetchMetaData'}, response => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
       } else {

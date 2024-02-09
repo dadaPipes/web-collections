@@ -4,7 +4,7 @@ console.log('script fired!');
 
 // fetch meta data
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'requestMetaData') {
+  if (message.request === 'fetchMetaData') {
     const data = {
     title: document.querySelector('meta[property="og:title"]')?.getAttribute('content'),
     image: document.querySelector('meta[property="og:image"]')?.getAttribute('content'),

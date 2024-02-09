@@ -1,14 +1,13 @@
 // sidePanel.js
 
-const getMetaDataBtn = document.getElementById("get-OG-data");
-getMetaDataBtn.addEventListener('click', () => {
-  sendMessageAndGetResponse();
+document.getElementById("get-OG-data").addEventListener('click', () => {
+  getWebPageData();
 });
 
-async function sendMessageAndGetResponse() {
+async function getWebPageData() {
   try {
     const response = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({type: 'fetchMetaDataFromPage'}, response => {
+      chrome.runtime.sendMessage({request: 'getMetaData'}, response => {
         console.log('early response from background: ', response);
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
